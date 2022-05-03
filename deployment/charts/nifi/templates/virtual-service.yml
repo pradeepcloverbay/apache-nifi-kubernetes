@@ -12,7 +12,7 @@ spec:
     - uri:
         prefix:
     rewrite:
-      uri: /
+      uri: /nifi
     route:
     - destination:
         host: nifi
