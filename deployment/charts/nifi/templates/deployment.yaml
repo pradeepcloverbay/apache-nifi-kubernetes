@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "name" . }}
+  labels:
+    app: {{ .Chart.Name }}-{{ .Values.image.tag }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ template "name" . }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      release: {{ template "name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}-{{ .Values.image.tag }}
+        release: {{ template "name" . }}
+        sidecar.istio.io/inject: "true"
+    spec:
+      {{- if .Values.image.pullSecret.enabled }}
+      imagePullSecrets:
+        - name: gcr-pull
+      {{- end }}
+      {{- if .Values.gcp.enabled }}
+      volumes:
+        - name: gcp
+          secret:
+            secretName: {{ template "name" . }}-gcp-auth
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containers.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+            {{- if .Values.gcp.enabled }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /etc/gcp/gcp_credentials.json
+            {{- end -}}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,49 @@
+timeout: 1200s
+substitutions:
+  _CHART_NAME: nifi
+  _PROJECT_NAME: andesml-1003-common-dev-prj
+  _CUSTOM_REGION: northamerica-northeast1
+  _CUSTOM_CLUSTER: andesml-common-dev-cluster-1
+  _K8_NAMESPACE: common
+  _VALUE_FILE: values-dev.yaml
+
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    id: setting project
+    args: 
+      - config
+      - set
+      - project
+      - $_PROJECT_NAME
+  - name: gcr.io/cloud-builders/gcloud
+    id: configure-docker
+    args: 
+      - auth
+      - configure-docker 
+      - us-docker.pkg.dev 
+      - --quiet
+
+  - name: gcr.io/cloud-builders/kubectl
+    id: Configure kubectl
+    args:
+      - cluster-info
+    env:
+      - PROJECT=$_PROJECT_NAME
+      - CLOUDSDK_COMPUTE_REGION=$_CUSTOM_REGION
+      - CLOUDSDK_CONTAINER_CLUSTER=$_CUSTOM_CLUSTER
+      - KUBECONFIG=/workspace/.kube/config
+
+  - name: us-docker.pkg.dev/andesml-1002-devsecops-prj/new/helm
+    id: Deploy
+    args:
+      - upgrade
+      - -i
+      - -n
+      - $_K8_NAMESPACE
+      - $_CHART_NAME
+      - ./deployment/charts/$_CHART_NAME
+      - -f
+      - ./deployment/charts/config/$_VALUE_FILE
+    env:
+      - KUBECONFIG=/workspace/.kube/config
+      - TILLERLESS=true
