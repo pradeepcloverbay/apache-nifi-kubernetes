@@ -11,7 +11,7 @@ autoscaling:
   enabled: true
 
 image:
-  repository: apache/nifi
+  repository: agturley/nifi   # apache/nifi
   tag: latest
   pullPolicy: IfNotPresent
   pullSecret:
