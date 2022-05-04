@@ -17,4 +17,4 @@ spec:
     - destination:
         host: nifi
         port:
-          number: 8080
+          number: 8081
